@@ -111,7 +111,7 @@ echo 📝 Press Ctrl+C to stop the app
 echo.
 
 REM Launch Streamlit
-streamlit run app\streamlit_app.py
+python -m streamlit run app\streamlit_app.py
 
 echo.
 echo 👋 Thanks for using Credit Card Fraud Detection!

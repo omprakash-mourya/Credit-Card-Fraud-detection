@@ -10,7 +10,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Add src to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+project_root = os.path.join(os.path.dirname(__file__), '..')
+project_root = os.path.abspath(project_root)
+sys.path.insert(0, project_root)
+
+# Also add current working directory to path
+current_dir = os.getcwd()
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 
 try:
     from src.utils import load_object
@@ -21,6 +28,16 @@ try:
 except ImportError as e:
     st.error(f"Import error: {e}")
     st.error("Please ensure you are running from the project root directory")
+    st.error(f"Current working directory: {os.getcwd()}")
+    st.error(f"Project root: {project_root}")
+    st.error("**Correct command:** `streamlit run app/streamlit_app.py` from project root")
+    st.error("**Alternative:** `python -m streamlit run app/streamlit_app.py`")
+    
+    st.code("""
+# Quick fix - run these commands:
+cd "credit-card-fraud"  # Navigate to project root
+python -m streamlit run app/streamlit_app.py
+    """)
     st.stop()
 
 
@@ -78,7 +95,13 @@ def load_models():
         pipeline = load_object(pipeline_path)
         model = load_object(xgb_path)
         
-        return pipeline, model, "Models loaded successfully!"
+        # Verify model is working by testing a small prediction with proper DataFrame
+        test_data = {feature: 0.0 for feature in FEATURE_COLUMNS}
+        test_df = pd.DataFrame([test_data])
+        test_processed = pipeline.transform(test_df)
+        test_prob = model.predict_proba(test_processed)[0, 1]
+        
+        return pipeline, model, f"Models loaded successfully! Test prediction: {test_prob:.4f}"
     except Exception as e:
         return None, None, f"Error loading models: {str(e)}"
 
@@ -194,6 +217,13 @@ def main():
     )
     
     show_explanations = st.sidebar.checkbox("Show Model Explanations", value=False)
+    
+    # Add cache clearing button
+    if st.sidebar.button("🔄 Reload Models"):
+        st.cache_resource.clear()
+        st.rerun()
+    
+    st.sidebar.info("💡 If models aren't updating, click 'Reload Models' button above.")
     
     # Main content tabs
     tab1, tab2, tab3, tab4 = st.tabs(["🔍 Single Prediction", "📊 Batch Prediction", "📈 Model Info", "🧠 Explanations"])

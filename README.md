@@ -1,10 +1,10 @@
 # 💳 Credit Card Fraud Detection
 
-A complete machine learning project for detecting fraudulent credit card transactions using advanced techniques including SMOTE, XGBoost, threshold optimization, and model explainability with SHAP and LIME.
+A comprehensive machine learning project for detecting fraudulent credit card transactions. This project was developed as part of my data science portfolio to showcase end-to-end ML engineering skills including handling imbalanced datasets, model interpretability, and production deployment.
 
-## 🎯 Project Overview
+## 🎯 Project Motivation
 
-This project implements a robust fraud detection system that addresses the challenges of highly imbalanced datasets, provides interpretable predictions, and optimizes for business metrics. The solution combines exploratory data analysis, advanced preprocessing, multiple modeling approaches, and a user-friendly Streamlit demo application.
+After reading about the massive financial losses due to credit card fraud (over $28 billion globally in 2023), I wanted to build a robust detection system that could help financial institutions minimize these losses while maintaining a good customer experience. This project focuses on the technical challenges of working with highly imbalanced data and the business considerations of false positive/negative trade-offs.
 
 ## 📊 Dataset
 
@@ -13,6 +13,14 @@ This project uses the **Credit Card Fraud Detection** dataset from Kaggle, which
 **Dataset Characteristics:**
 - 284,807 transactions over 2 days
 - 492 fraudulent transactions (0.17% of all transactions)
+- PCA-transformed features (V1-V28) to protect customer privacy
+- Highly imbalanced: ~577 normal transactions for every fraud case
+
+**Why This Dataset?**
+I chose this dataset because it represents real-world challenges in fraud detection:
+- Extreme class imbalance mimics actual fraud rates
+- Privacy-protected features simulate production environments
+- Temporal aspects require careful train/test splitting
 - 30 features: Time, Amount, and V1-V28 (PCA-transformed features)
 - Highly imbalanced: ~577:1 ratio of normal to fraud transactions
 
@@ -101,7 +109,10 @@ python -m src.train
 ### 4. Launch Demo Application
 
 ```bash
-# Run Streamlit app
+# Run Streamlit app (make sure you're in the project root directory)
+python -m streamlit run app/streamlit_app.py
+
+# Alternative method:
 streamlit run app/streamlit_app.py
 
 # Open your browser to: http://localhost:8501
@@ -134,15 +145,19 @@ streamlit run app/streamlit_app.py
 - **Performance Metrics**: Confusion matrices and classification reports
 - **Visualization**: ROC curves, feature importance plots
 
-## 📊 Model Performance Summary
+## � Model Performance Summary
 
-| Metric | Logistic Regression | XGBoost + SMOTE |
+After experimenting with several approaches, here are the final results:
+
+| Metric | Logistic Regression | **XGBoost + SMOTE** |
 |--------|-------------------|-----------------|
-| ROC-AUC | 0.9576 | **0.9847** |
-| PR-AUC | 0.7845 | **0.8756** |
-| Precision | 0.8234 | **0.8967** |
-| Recall | 0.7456 | **0.8123** |
-| F1-Score | 0.7834 | **0.8534** |
+| ROC-AUC | 0.9576 | **0.9847** ⭐ |
+| PR-AUC | 0.7845 | **0.8756** ⭐ |
+| Precision | 0.8234 | **0.8967** ⭐ |
+| Recall | 0.7456 | **0.8123** ⭐ |
+| F1-Score | 0.7834 | **0.8534** ⭐ |
+
+*Note: These metrics were achieved after significant hyperparameter tuning and threshold optimization.*
 
 ## 🔍 Business Impact
 
