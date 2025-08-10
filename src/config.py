@@ -1,4 +1,14 @@
-"""Configuration settings for Credit Card Fraud Detection project."""
+"""
+Configuration settings for the fraud detection project.
+
+This module contains all the constants and configuration parameters
+used throughout the project. Centralizing these makes the codebase
+more maintainable and allows easy experimentation with different settings.
+
+Author: Data Science Portfolio Project
+Created: During model experimentation phase
+Last Modified: After hyperparameter optimization
+"""
 import os
 
 # Random seed for reproducibility
