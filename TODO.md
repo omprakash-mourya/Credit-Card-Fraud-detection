@@ -128,5 +128,9 @@
 - Research collaboration with universities
 - Industry conference presentations
 
-*Last updated: [Current Date]*
+---
+
+**Author:** Omprakash Mourya  
+**Contact:** ommourya2006@gmail.com  
+*Last updated: August 11, 2025*  
 *Priority level: 🔥 High | 🔶 Medium | 🔵 Low*

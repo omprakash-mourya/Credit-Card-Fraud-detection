@@ -1,6 +1,10 @@
 # 🚀 Development Journey
 
-This document chronicles the development process, key decisions, and lessons learned while building this fraud detection system.
+This document chronicles my development process, key decisions, and lessons learned while building this fraud detection system.
+
+**Developer:** Omprakash Mourya  
+**Timeline:** July - August 2025  
+**Project Duration:** ~3 weeks of intensive development
 
 ## 🎯 Initial Approach (Week 1)
 

@@ -1,10 +1,16 @@
 # 💳 Credit Card Fraud Detection
 
-A comprehensive machine learning project for detecting fraudulent credit card transactions. This project was developed as part of my data science portfolio to showcase end-to-end ML engineering skills including handling imbalanced datasets, model interpretability, and production deployment.
+A comprehensive machine learning project for detecting fraudulent credit card transactions. This project demonstrates end-to-end ML engineering skills including handling severely imbalanced datasets, advanced sampling techniques, model interpretability, and production deployment with interactive web applications.
+
+## 👨‍💻 About the Author
+
+**Omprakash Mourya**  
+📧 ommourya2006@gmail.com  
+📅 Last Updated: August 11, 2025
 
 ## 🎯 Project Motivation
 
-After reading about the massive financial losses due to credit card fraud (over $28 billion globally in 2023), I wanted to build a robust detection system that could help financial institutions minimize these losses while maintaining a good customer experience. This project focuses on the technical challenges of working with highly imbalanced data and the business considerations of false positive/negative trade-offs.
+Credit card fraud detection is a critical challenge in the financial industry, with losses exceeding $28 billion globally in 2023. This project tackles the complex problem of identifying fraudulent transactions in highly imbalanced datasets (only 0.17% fraud rate) while maintaining excellent customer experience through minimal false positives.
 
 ## 📊 Dataset
 
@@ -263,6 +269,20 @@ COST_FN = 5                 # False negative cost
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 📞 Contact & Support
+
+For questions, suggestions, or collaboration opportunities:
+
+**Omprakash Mourya**  
+📧 Email: ommourya2006@gmail.com  
+💼 GitHub: [@omprakash-mourya](https://github.com/omprakash-mourya)
+
+---
+
+⭐ **If you find this project helpful, please give it a star!** ⭐
+
+*Last Updated: August 11, 2025*
 
 ## 🙏 Acknowledgments
 
