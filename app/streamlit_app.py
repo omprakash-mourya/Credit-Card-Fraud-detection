@@ -495,7 +495,9 @@ def business_impact_tab(model, pipeline):
     try:
         if data_source == "Test Set (Built-in)":
             # Load test data
-            X, y = load_data()
+            df = load_data()
+            X = df[FEATURE_COLUMNS]
+            y = df['Class']
             from sklearn.model_selection import train_test_split
             _, X_test, _, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
             
@@ -688,7 +690,8 @@ def model_drift_tab():
         try:
             # Load reference data
             if use_builtin_reference:
-                X_ref, _ = load_data()
+                df_ref = load_data()
+                X_ref = df_ref[FEATURE_COLUMNS]
                 st.success("✅ Loaded built-in training data as reference")
             elif reference_file is not None:
                 X_ref = pd.read_csv(reference_file)
