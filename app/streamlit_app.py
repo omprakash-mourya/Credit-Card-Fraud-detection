@@ -25,6 +25,16 @@ try:
     from src.evaluate import plot_confusion_matrix
     from src.config import FEATURE_COLUMNS, MODEL_DIR
     from src.explain import explain_shap, plot_feature_importance
+    from src.business_impact import (
+        calculate_fraud_detection_rate, calculate_cost_savings, 
+        threshold_cost_analysis, plot_cost_vs_threshold, 
+        plot_cost_breakdown, generate_business_report
+    )
+    from src.model_drift import (
+        check_data_drift, generate_drift_summary, 
+        format_drift_report, interpret_drift_level
+    )
+    from src.data_utils import load_data
 except ImportError as e:
     st.error(f"Import error: {e}")
     st.error("Please ensure you are running from the project root directory")
@@ -226,7 +236,14 @@ def main():
     st.sidebar.info("💡 If models aren't updating, click 'Reload Models' button above.")
     
     # Main content tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["🔍 Single Prediction", "📊 Batch Prediction", "📈 Model Info", "🧠 Explanations"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        "🔍 Single Prediction", 
+        "📊 Batch Prediction", 
+        "📈 Model Info", 
+        "🧠 Explanations",
+        "💰 Business Impact",
+        "📉 Model Drift"
+    ])
     
     # Tab 1: Single Transaction Prediction
     with tab1:
@@ -435,6 +452,399 @@ def main():
         - V-features capture transaction behavior patterns
         - Model learns complex interactions between features
         """)
+    
+    # Tab 5: Business Impact Analysis
+    with tab5:
+        business_impact_tab(model, pipeline)
+    
+    # Tab 6: Model Drift Detection
+    with tab6:
+        model_drift_tab()
+
+
+def business_impact_tab(model, pipeline):
+    """Business Impact Analysis tab implementation."""
+    st.header("💰 Business Impact Analysis")
+    
+    # Cost parameters
+    st.subheader("⚙️ Cost Configuration")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        cost_fp = st.slider(
+            "Cost per False Positive ($)", 
+            min_value=0.1, max_value=10.0, value=1.0, step=0.1,
+            help="Cost of blocking a legitimate transaction"
+        )
+    
+    with col2:
+        cost_fn = st.slider(
+            "Cost per False Negative ($)", 
+            min_value=1.0, max_value=50.0, value=5.0, step=1.0,
+            help="Cost of missing a fraudulent transaction"
+        )
+    
+    # Data source selection
+    st.subheader("📊 Analysis Dataset")
+    data_source = st.radio(
+        "Choose data source:",
+        ["Test Set (Built-in)", "Upload CSV File"],
+        horizontal=True
+    )
+    
+    try:
+        if data_source == "Test Set (Built-in)":
+            # Load test data
+            X, y = load_data()
+            from sklearn.model_selection import train_test_split
+            _, X_test, _, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+            
+            # Make predictions
+            X_test_processed = pipeline.transform(X_test)
+            y_pred = model.predict(X_test_processed)
+            y_proba = model.predict_proba(X_test_processed)[:, 1]
+            
+            st.success(f"✅ Analyzed {len(X_test):,} test transactions")
+            
+        else:
+            uploaded_file = st.file_uploader(
+                "Upload CSV file with transaction data",
+                type=['csv'],
+                help="CSV should contain features and 'Class' column (0=normal, 1=fraud)"
+            )
+            
+            if uploaded_file is not None:
+                df = pd.read_csv(uploaded_file)
+                
+                if 'Class' in df.columns:
+                    y_test = df['Class'].values
+                    X_test = df.drop('Class', axis=1)
+                    
+                    # Ensure proper feature columns
+                    missing_cols = set(FEATURE_COLUMNS) - set(X_test.columns)
+                    if missing_cols:
+                        st.error(f"Missing required columns: {missing_cols}")
+                        return
+                    
+                    X_test = X_test[FEATURE_COLUMNS]
+                    
+                    # Make predictions
+                    X_test_processed = pipeline.transform(X_test)
+                    y_pred = model.predict(X_test_processed)
+                    y_proba = model.predict_proba(X_test_processed)[:, 1]
+                    
+                    st.success(f"✅ Analyzed {len(X_test):,} uploaded transactions")
+                else:
+                    st.error("CSV file must contain 'Class' column with true labels")
+                    return
+            else:
+                st.info("Please upload a CSV file to analyze business impact")
+                return
+        
+        # Generate business analysis
+        business_report = generate_business_report(y_test, y_pred, y_proba, cost_fp, cost_fn)
+        
+        # Display key metrics
+        st.subheader("🎯 Key Performance Metrics")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            fraud_rate = business_report['fraud_detection_rate']
+            st.metric(
+                "Fraud Detection Rate",
+                f"{fraud_rate:.1f}%",
+                help="Percentage of actual fraud cases detected"
+            )
+        
+        with col2:
+            savings_100k = business_report['cost_analysis']['savings_per_100k']
+            st.metric(
+                "Savings per 100K Transactions",
+                f"${savings_100k:,.0f}",
+                help="Cost savings compared to baseline model"
+            )
+        
+        with col3:
+            optimal_threshold = business_report['optimal_threshold']
+            st.metric(
+                "Optimal Threshold",
+                f"{optimal_threshold:.3f}",
+                help="Classification threshold that minimizes total cost"
+            )
+        
+        with col4:
+            total_savings = business_report['cost_analysis']['cost_saved']
+            st.metric(
+                "Total Cost Savings",
+                f"${total_savings:,.0f}",
+                help="Total savings on this dataset"
+            )
+        
+        # Cost analysis visualizations
+        st.subheader("📈 Cost Analysis")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.plotly_chart(business_report['cost_plot'], use_container_width=True)
+        
+        with col2:
+            st.plotly_chart(business_report['breakdown_plot'], use_container_width=True)
+        
+        # Detailed breakdown
+        st.subheader("📋 Detailed Analysis")
+        
+        cost_analysis = business_report['cost_analysis']
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("**Current Model Performance:**")
+            st.write(f"• False Positives: {cost_analysis['fp_current']:,}")
+            st.write(f"• False Negatives: {cost_analysis['fn_current']:,}")
+            st.write(f"• Total Cost: ${cost_analysis['current_cost']:,.0f}")
+        
+        with col2:
+            st.write("**Baseline Model (All Negative):**")
+            st.write(f"• False Positives: {cost_analysis['fp_baseline']:,}")
+            st.write(f"• False Negatives: {cost_analysis['fn_baseline']:,}")
+            st.write(f"• Total Cost: ${cost_analysis['baseline_cost']:,.0f}")
+        
+        # Threshold sensitivity analysis
+        with st.expander("🔍 Threshold Sensitivity Analysis"):
+            threshold_df = business_report['threshold_df']
+            st.dataframe(
+                threshold_df.style.format({
+                    'threshold': '{:.3f}',
+                    'total_cost': '${:,.0f}',
+                    'precision': '{:.3f}',
+                    'recall': '{:.3f}',
+                    'cost_per_100k': '${:,.0f}'
+                }),
+                use_container_width=True
+            )
+    
+    except Exception as e:
+        st.error(f"Error in business impact analysis: {str(e)}")
+        st.error("Please ensure your data format is correct and models are loaded properly.")
+
+
+def model_drift_tab():
+    """Model Drift Detection tab implementation."""
+    st.header("📉 Model Drift Detection")
+    
+    st.info("""
+    **Model Drift Detection** helps identify when new data significantly differs from training data,
+    which could indicate that model performance may degrade and retraining might be needed.
+    """)
+    
+    # Configuration
+    st.subheader("⚙️ Drift Detection Configuration")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        psi_threshold = st.slider(
+            "PSI Threshold", 
+            min_value=0.1, max_value=0.5, value=0.25, step=0.05,
+            help="Population Stability Index threshold (>0.25 indicates significant drift)"
+        )
+    
+    with col2:
+        p_value_threshold = st.slider(
+            "P-value Threshold", 
+            min_value=0.01, max_value=0.1, value=0.05, step=0.01,
+            help="KS test p-value threshold (<0.05 indicates significant distribution change)"
+        )
+    
+    # Data upload
+    st.subheader("📊 Data Upload")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**Reference Data (Training Set)**")
+        use_builtin_reference = st.checkbox("Use built-in training data", value=True)
+        
+        if not use_builtin_reference:
+            reference_file = st.file_uploader(
+                "Upload reference CSV",
+                type=['csv'],
+                key="reference_data"
+            )
+        else:
+            reference_file = None
+    
+    with col2:
+        st.write("**New Data (Current/Test Set)**")
+        new_file = st.file_uploader(
+            "Upload new data CSV",
+            type=['csv'],
+            key="new_data",
+            help="Upload current data to check for drift"
+        )
+    
+    if st.button("🔍 Analyze Drift", type="primary"):
+        try:
+            # Load reference data
+            if use_builtin_reference:
+                X_ref, _ = load_data()
+                st.success("✅ Loaded built-in training data as reference")
+            elif reference_file is not None:
+                X_ref = pd.read_csv(reference_file)
+                # Remove target column if present
+                if 'Class' in X_ref.columns:
+                    X_ref = X_ref.drop('Class', axis=1)
+                st.success("✅ Loaded uploaded reference data")
+            else:
+                st.error("Please provide reference data")
+                return
+            
+            # Load new data
+            if new_file is not None:
+                X_new = pd.read_csv(new_file)
+                # Remove target column if present
+                if 'Class' in X_new.columns:
+                    X_new = X_new.drop('Class', axis=1)
+                st.success("✅ Loaded new data for drift analysis")
+            else:
+                st.error("Please upload new data file")
+                return
+            
+            # Perform drift analysis
+            with st.spinner("Analyzing data drift..."):
+                drift_df = check_data_drift(X_new, X_ref, psi_threshold, p_value_threshold)
+                
+                if drift_df.empty:
+                    st.warning("No common numeric features found for drift analysis")
+                    return
+                
+                summary = generate_drift_summary(drift_df)
+            
+            # Display results
+            st.subheader("📊 Drift Analysis Results")
+            
+            # Summary metrics
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric(
+                    "Features Analyzed",
+                    summary['total_features']
+                )
+            
+            with col2:
+                drift_color = "red" if summary['drift_percentage'] > 25 else "orange" if summary['drift_percentage'] > 10 else "green"
+                st.metric(
+                    "Features with Drift",
+                    f"{summary['features_with_drift']} ({summary['drift_percentage']:.1f}%)"
+                )
+            
+            with col3:
+                psi_color = "red" if summary['avg_psi'] > 0.25 else "orange" if summary['avg_psi'] > 0.1 else "green"
+                st.metric(
+                    "Average PSI",
+                    f"{summary['avg_psi']:.3f}"
+                )
+            
+            with col4:
+                st.metric(
+                    "Max PSI",
+                    f"{summary['max_psi']:.3f}"
+                )
+            
+            # Drift status alert
+            if summary['drift_percentage'] > 50:
+                st.error("🚨 **HIGH ALERT**: Major data drift detected. Consider model retraining immediately.")
+            elif summary['drift_percentage'] > 25:
+                st.warning("⚠️ **MODERATE ALERT**: Significant drift detected. Monitor closely and consider retraining.")
+            elif summary['drift_percentage'] > 0:
+                st.info("💡 **LOW ALERT**: Minor drift detected. Continue monitoring.")
+            else:
+                st.success("✅ **NO ALERT**: Data distribution appears stable.")
+            
+            # Detailed drift table
+            st.subheader("📋 Detailed Drift Analysis")
+            
+            # Add drift level interpretation
+            drift_df['drift_level'] = drift_df['psi'].apply(interpret_drift_level)
+            
+            # Format the dataframe for display
+            display_df = drift_df[['feature', 'psi', 'drift_level', 'ks_p_value', 'drift_detected', 'mean_shift']].copy()
+            display_df.columns = ['Feature', 'PSI', 'Drift Level', 'KS P-value', 'Drift Detected', 'Mean Shift (σ)']
+            
+            # Color-code the dataframe
+            def highlight_drift(row):
+                if row['Drift Detected']:
+                    return ['background-color: #ffcdd2'] * len(row)
+                elif row['PSI'] > 0.1:
+                    return ['background-color: #fff3e0'] * len(row)
+                else:
+                    return ['background-color: #e8f5e8'] * len(row)
+            
+            styled_df = display_df.style.apply(highlight_drift, axis=1).format({
+                'PSI': '{:.4f}',
+                'KS P-value': '{:.4f}',
+                'Mean Shift (σ)': '{:.2f}'
+            })
+            
+            st.dataframe(styled_df, use_container_width=True)
+            
+            # Feature-specific insights
+            if summary['features_high_psi']:
+                st.subheader("🚨 High-Risk Features")
+                for feature in summary['features_high_psi'][:5]:  # Show top 5
+                    feature_row = drift_df[drift_df['feature'] == feature].iloc[0]
+                    with st.expander(f"📊 {feature} (PSI: {feature_row['psi']:.4f})"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.write("**Reference Distribution:**")
+                            st.write(f"Mean: {feature_row['ref_mean']:.4f}")
+                            st.write(f"Std: {feature_row['ref_std']:.4f}")
+                        with col2:
+                            st.write("**New Distribution:**")
+                            st.write(f"Mean: {feature_row['new_mean']:.4f}")
+                            st.write(f"Std: {feature_row['new_std']:.4f}")
+                        
+                        st.write(f"**Mean Shift:** {feature_row['mean_shift']:.2f} standard deviations")
+            
+            # Recommendations
+            st.subheader("💡 Recommendations")
+            
+            if summary['drift_percentage'] > 50:
+                st.markdown("""
+                **Immediate Actions Required:**
+                - 🔄 **Retrain model** with recent data
+                - 📊 **Investigate data sources** for systematic changes
+                - ⚠️ **Monitor model performance** closely
+                - 🚨 **Consider A/B testing** before full deployment
+                """)
+            elif summary['drift_percentage'] > 25:
+                st.markdown("""
+                **Recommended Actions:**
+                - 📈 **Increase monitoring frequency**
+                - 🔍 **Investigate drifted features** for business changes
+                - 📋 **Prepare for potential retraining**
+                - 📊 **Collect more recent training data**
+                """)
+            elif summary['drift_percentage'] > 0:
+                st.markdown("""
+                **Monitoring Actions:**
+                - ✅ **Continue regular drift monitoring**
+                - 📊 **Track feature importance changes**
+                - 🔍 **Document any business context changes**
+                """)
+            else:
+                st.markdown("""
+                **Status: Stable**
+                - ✅ **Model appears stable** on current data
+                - 📅 **Continue regular monitoring schedule**
+                - 🎯 **Focus on performance optimization**
+                """)
+                
+        except Exception as e:
+            st.error(f"Error in drift analysis: {str(e)}")
+            st.error("Please check your data format and ensure files contain numeric features.")
 
 
 if __name__ == "__main__":
