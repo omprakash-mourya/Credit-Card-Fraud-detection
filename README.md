@@ -30,12 +30,6 @@ I chose this dataset because it represents real-world challenges in fraud detect
 - 30 features: Time, Amount, and V1-V28 (PCA-transformed features)
 - Highly imbalanced: ~577:1 ratio of normal to fraud transactions
 
-### 📥 Download Instructions
-
-1. Visit the [Kaggle dataset page](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)
-2. Download `creditcard.csv`
-3. Place the file in the `data/` directory: `data/creditcard.csv`
-
 ## 🏗️ Project Structure
 
 ```
@@ -168,19 +162,19 @@ After experimenting with several approaches, here are the final results:
 ## 🔍 Business Impact
 
 ### Key Insights for Resume/Interview:
-- **Handled severe class imbalance (577:1 ratio) using SMOTE oversampling technique**
-- **Achieved 98.5% ROC-AUC with XGBoost, detecting 81% of fraudulent transactions**
-- **Implemented cost-sensitive threshold optimization reducing false negatives by 23%**
-- **Built interpretable ML pipeline with SHAP explanations for regulatory compliance**
-- **Deployed interactive Streamlit app enabling real-time fraud scoring and analysis**
+ - **Tuned thresholds using a business cost matrix, demonstrating 67% reduction in business costs**
 
 ### Cost Optimization
-- **False Positive Cost**: $1 (manual review)
-- **False Negative Cost**: $5 (missed fraud)
-- **Optimal Threshold**: Typically around 0.3-0.4 (tuned during training)
-- **Business Impact**: Significant reduction in missed fraud cases
+ - **Optimal Threshold**: 0.98 (found via cost-sensitive optimization)
+ - **Business Impact**: 67% reduction in total business costs (from $1,500 to $490 on test set)
 
 ## 🧪 Testing
+ - **Default threshold (0.5):** $1,500 total cost (1,010 false positives, 98 false negatives)
+ - **Optimized threshold (0.98):** $490 total cost (0 false positives, 98 false negatives)
+ - **Cost savings:** $1,010
+ - **Percentage reduction:** 67%
+
+ *Threshold optimization prioritizes minimizing costly false positives, resulting in a substantial reduction in overall business costs. The model is highly conservative at the optimal threshold, which may trade off some recall for maximum cost savings.*
 
 ```bash
 # Run unit tests
@@ -258,42 +252,10 @@ COST_FN = 5                 # False negative cost
 - **Business**: Custom cost function (FP cost + FN cost)
 - **Interpretability**: SHAP values for feature importance
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Commit changes (`git commit -am 'Add new feature'`)
-4. Push to branch (`git push origin feature/new-feature`)
-5. Create a Pull Request
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 📞 Contact & Support
-
-For questions, suggestions, or collaboration opportunities:
-
 **Omprakash Mourya**  
 📧 Email: ommourya2006@gmail.com  
 💼 GitHub: [@omprakash-mourya](https://github.com/omprakash-mourya)
-
----
-
-⭐ **If you find this project helpful, please give it a star!** ⭐
-
-*Last Updated: August 11, 2025*
-
-## 🙏 Acknowledgments
-
-- **Kaggle**: For providing the credit card fraud dataset
-- **Machine Learning Community**: For SMOTE, XGBoost, SHAP, and LIME libraries
-- **Streamlit Team**: For the excellent web app framework
-
-## 📞 Contact
-
-For questions or suggestions, please open an issue in the repository.
-
----
-
-**Note**: This project is for educational and research purposes. For production fraud detection systems, additional considerations around data privacy, real-time processing, and regulatory compliance would be necessary.
